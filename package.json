@@ -16,7 +16,7 @@
     "biome:check": "biome check .",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "check": "bun run typecheck && bun run biome:check && bun run docs:check && bun run foundation:check",
+    "check": "bun run typecheck && bun run biome:check && bun run docs:check && bun run foundation:check && bun run control-plane:check",
     "docs:check": "bun scripts/check-doc-links.ts",
     "foundation:check": "bun scripts/check-foundation.ts",
     "hooks:install": "lefthook install",
@@ -33,11 +33,13 @@
     "supabase:migration:new": "bunx supabase migration new",
     "supabase:types": "mkdir -p packages/database/src/generated && bunx supabase gen types typescript --local > packages/database/src/generated/supabase.ts",
     "dev:runtime": "bun run supabase:start && bun run supabase:status",
-    "verify:runtime": "bun run supabase:status && bun run supabase:test && bun run supabase:types"
+    "verify:runtime": "bun run supabase:status && bun run supabase:test && bun run supabase:types",
+    "control-plane:check": "bun scripts/check-control-plane-schema.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
-    "@types/bun": "^1.3.14",
+    "@types/bun": "^1.0.0",
+    "@types/node": "^22.0.0",
     "lefthook": "^1.0.0",
     "supabase": "^2.0.0",
     "typescript": "^5.0.0"

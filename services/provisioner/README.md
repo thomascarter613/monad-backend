@@ -1,4 +1,6 @@
-# Provisioner Service
+# Provisioner
 
-This directory is reserved by WP-0002 so future work packets have a stable home.
+Future service responsible for rendering and provisioning Supabase OSS runtime
+instances for project environments.
 
+It will consume the control-plane data model introduced in WP-0003.

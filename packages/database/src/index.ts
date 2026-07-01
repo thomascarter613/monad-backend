@@ -6,4 +6,5 @@ export interface RuntimeMetadataRecord {
   readonly updated_at: string;
 }
 
+export * from "./control-plane";
 export type { Database, Json } from "./generated/supabase";

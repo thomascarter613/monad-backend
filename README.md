@@ -1,150 +1,122 @@
 # Open Backend Cloud
 
-> Working name: **Open Backend Cloud**. The name is intentionally temporary and can be changed globally later.
+Open Backend Cloud is a free/open-source Supabase Cloud-like backend platform
+built from Supabase OSS plus best-of-breed FOSS infrastructure, operations,
+security, CI/CD, observability, and governance tools.
 
-Open Backend Cloud is a free/open-source, self-hostable backend platform control plane built around **Supabase OSS** as the runtime plane.
+Supabase OSS is the runtime plane. Open Backend Cloud is the control plane
+around that runtime.
 
-The goal is not to fork or replace Supabase. The goal is to provide a Supabase Cloud-like developer and operations experience on user-owned infrastructure by combining Supabase OSS with best-of-breed free/open-source infrastructure, operations, security, CI/CD, observability, backup, governance, and platform-management tools.
+## Current status
 
-## Core thesis
+Implemented work packets:
 
-Supabase OSS provides the backend runtime:
+- WP-0001: Repository Foundation and Product Charter
+- WP-0002: Monorepo Tooling and Local Supabase Runtime
+- WP-0003: Control-Plane Data Model and Database Package
 
-- PostgreSQL
-- Auth
-- PostgREST / generated APIs
-- Realtime
-- Storage
-- Edge Functions
-- Studio
-- local development workflow
-- database migrations and configuration-as-code primitives
+Next work packet:
 
-Open Backend Cloud provides the missing platform layer:
-
-- organizations, projects, and environments
-- runtime provisioning
-- deployment orchestration
-- secrets management
-- backups, restore, and PITR strategy
-- observability
-- audit logging
-- security and policy gates
-- CI/CD workflows
-- preview environments and branching workflows
-- management API
-- CLI
-- admin console
-- usage, quotas, and future billing hooks
-- production runbooks and governance
-
-## Why this exists
-
-Self-hosted Supabase is powerful, but it is not the same thing as Supabase Cloud. Self-hosted Supabase is best treated as a single-project backend stack. Platform-only cloud features such as branching, advanced metrics beyond logs, managed backups/PITR, analytics/vector buckets, ETL, and the platform management API are not part of the normal self-hosted configuration.
-
-Open Backend Cloud exists to reconstruct that missing platform layer using FOSS components.
+- WP-0004: Control API Skeleton and Platform Service Boundaries
 
 ## Architecture posture
 
-```text
-Supabase OSS = runtime plane
-Open Backend Cloud = control plane
-FOSS infrastructure = infrastructure plane
+```txt
+Control plane:
+  Open Backend Cloud services, database, API, CLI, admin UI, workers, audit,
+  governance, deployment automation, backup management, observability, and
+  project/environment lifecycle.
+
+Runtime plane:
+  Supabase OSS running Postgres, Auth, PostgREST, Realtime, Storage, Edge
+  Functions, Studio, and related runtime services.
+
+Infrastructure plane:
+  FOSS infrastructure such as Docker Compose, k3s/Kubernetes, OpenTofu,
+  Argo CD, Caddy/Kong, OpenBao/SOPS, pgBackRest/WAL-G, OpenTelemetry,
+  Prometheus, Grafana, Loki, Valkey, NATS, and related tools.
 ```
 
-The platform should wrap, orchestrate, secure, monitor, and govern Supabase OSS. It should avoid unnecessary forks and should treat upstream Supabase as a first-class dependency.
+## Repository layout
 
-## Repository status
+```txt
+apps/
+  admin/                 Future platform admin console.
+  docs/                  Future documentation site.
 
-Current stage: **WP-0002: Monorepo Tooling and Local Supabase Runtime**.
+services/
+  control-api/           Future management API.
+  provisioner/           Future runtime provisioning service.
+  worker/                Future background worker service.
 
-This repository now contains source-of-truth docs, monorepo tooling, local quality checks, and a source-controlled local Supabase runtime template.
+packages/
+  config/                Shared configuration helpers.
+  database/              Database types, generated Supabase types, platform schema constants.
+  domain/                Control-plane domain types.
+  events/                Platform event names and envelopes.
+  sdk/                   Future typed control API SDK.
 
-## Current source-of-truth docs
+supabase/
+  config.toml            Local Supabase development configuration.
+  migrations/            Local development migrations.
+  tests/                 pgTAP database tests.
+  functions/             Local Edge Function examples.
 
-- [Documentation Index](docs/00-index.md)
-- [Product Charter](docs/product/product-charter.md)
-- [v1 Scope](docs/product/v1-scope.md)
-- [Architecture Overview](docs/architecture/overview.md)
-- [Control Plane / Runtime Plane](docs/architecture/control-plane-runtime-plane.md)
+docs/
+  architecture/          Architecture docs and ADRs.
+  database/              Database docs.
+  development/           Local development docs.
+  product/               Product source-of-truth docs.
+  work-packets/          Work packet records.
+```
+
+## Common commands
+
+```bash
+bun install
+bun run check
+bun run docs:check
+bun run foundation:check
+bun run control-plane:check
+```
+
+Local Supabase runtime commands:
+
+```bash
+bun run supabase:start
+bun run supabase:status
+bun run supabase:reset
+bun run supabase:test
+bun run supabase:types
+bun run supabase:stop
+```
+
+## Source-of-truth docs
+
+Start here:
+
+- [Documentation index](docs/00-index.md)
+- [Product charter](docs/product/product-charter.md)
+- [v1 scope](docs/product/v1-scope.md)
+- [Architecture overview](docs/architecture/overview.md)
+- [Control-plane/runtime-plane architecture](docs/architecture/control-plane-runtime-plane.md)
+- [Control-plane data model](docs/architecture/control-plane-data-model.md)
+- [Control-plane schema](docs/database/control-plane-schema.md)
+
+## Foundational decisions
+
 - [ADR-0001: Use Supabase OSS as Runtime Plane](docs/architecture/adr/0001-use-supabase-oss-as-runtime-plane.md)
 - [ADR-0002: Build FOSS Control Plane Around Supabase](docs/architecture/adr/0002-build-foss-control-plane-around-supabase.md)
 - [ADR-0003: Use Postgres for Control Plane State](docs/architecture/adr/0003-use-postgres-for-control-plane-state.md)
 - [ADR-0004: Use GitOps for Runtime Deployment](docs/architecture/adr/0004-use-gitops-for-runtime-deployment.md)
-- [Local Supabase Runtime](docs/development/local-supabase-runtime.md)
-- [WP-0002: Monorepo Tooling and Local Supabase Runtime](docs/work-packets/WP-0002-monorepo-tooling-and-local-supabase-runtime.md)
 
+## Production boundary
 
+During early local development, the local Supabase Postgres instance may host
+the `platform` schema for control-plane development. In production, the
+control-plane database should be isolated from customer runtime databases.
 
-## Local development quickstart
+## License
 
-Install dependencies:
-
-```bash
-bun install
-```
-
-Run repository checks:
-
-```bash
-bun run check
-```
-
-Start the local Supabase runtime:
-
-```bash
-bun run supabase:start
-```
-
-Inspect runtime status:
-
-```bash
-bun run supabase:status
-```
-
-Reset the database, apply migrations, and seed data:
-
-```bash
-bun run supabase:reset
-```
-
-Run database tests and regenerate database types:
-
-```bash
-bun run supabase:test
-bun run supabase:types
-```
-
-Stop the runtime:
-
-```bash
-bun run supabase:stop
-```
-
-## v1 direction
-
-v1 should prove that a developer/operator can:
-
-1. create a platform project;
-2. create environments for that project;
-3. provision a Supabase OSS runtime;
-4. manage configuration and secrets safely;
-5. apply migrations through a governed workflow;
-6. observe runtime health, logs, metrics, and failures;
-7. create and verify backups;
-8. restore an environment from backup;
-9. audit privileged actions;
-10. create preview environments for development workflows;
-11. operate the system through API, CLI, and admin UI.
-
-## Non-goals for v1
-
-v1 should not attempt to provide full Supabase Cloud parity. It should not initially include global multi-region hosting, complex billing, enterprise marketplace functionality, true zero-copy branching, or highly abstracted multi-cloud infrastructure. Those are later-stage capabilities.
-
-## References
-
-- Supabase product overview: https://supabase.com/
-- Supabase self-hosting docs: https://supabase.com/docs/guides/self-hosting
-- Supabase local development docs: https://supabase.com/docs/guides/local-development/overview
-- Supabase CLI config docs: https://supabase.com/docs/guides/local-development/cli/config
-- Supabase CLI reference: https://supabase.com/docs/reference/cli/introduction
+License is not finalized. WP-0001 intentionally left final licensing as an
+explicit project decision.

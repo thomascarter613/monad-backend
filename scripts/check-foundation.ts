@@ -24,14 +24,22 @@ const requiredFiles = [
   "docs/architecture/adr/0004-use-gitops-for-runtime-deployment.md",
   "docs/development/local-supabase-runtime.md",
   "docs/work-packets/WP-0002-monorepo-tooling-and-local-supabase-runtime.md",
+  "docs/work-packets/WP-0003-control-plane-data-model-and-database-package.md",
+  "docs/architecture/control-plane-data-model.md",
+  "docs/database/control-plane-schema.md",
   "supabase/config.toml",
   "supabase/seed.sql",
   "supabase/migrations/20260701210000_init_runtime_foundation.sql",
+  "supabase/migrations/20260701213000_init_control_plane_schema.sql",
   "supabase/tests/00_foundation.pgtap.sql",
+  "supabase/tests/01_control_plane_schema.pgtap.sql",
   "packages/config/src/index.ts",
   "packages/database/src/index.ts",
+  "packages/database/src/control-plane.ts",
   "packages/domain/src/index.ts",
+  "packages/domain/src/control-plane.ts",
   "packages/events/src/index.ts",
+  "packages/events/src/control-plane-events.ts",
   "packages/sdk/src/index.ts",
 ];
 
@@ -51,6 +59,7 @@ const requiredScripts = [
   "supabase:types",
   "dev:runtime",
   "verify:runtime",
+  "control-plane:check",
 ];
 
 const failures: string[] = [];

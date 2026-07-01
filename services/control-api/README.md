@@ -1,4 +1,7 @@
-# Control API Service
+# Control API
 
-This directory is reserved by WP-0002 so future work packets have a stable home.
+Future management API for organizations, projects, environments,
+deployments, backups, restores, secrets, usage, quotas, API keys, webhooks,
+and audit events.
 
+WP-0004 should turn this placeholder into the first runnable service.

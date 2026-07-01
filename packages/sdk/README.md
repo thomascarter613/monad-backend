@@ -1,4 +1,6 @@
-# SDK Package
+# `@open-backend-cloud/sdk`
 
-This directory is reserved by WP-0002 so future work packets have a stable home.
+Placeholder SDK package for future typed clients that call the control API.
 
+WP-0003 adds route-name constants so later services and apps can converge on
+a single control-plane API vocabulary before endpoint implementations exist.

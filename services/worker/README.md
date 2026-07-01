@@ -1,4 +1,4 @@
-# Worker Service
+# Worker
 
-This directory is reserved by WP-0002 so future work packets have a stable home.
-
+Future background worker for asynchronous platform operations such as
+backups, restores, deployments, runtime health checks, and webhook delivery.
