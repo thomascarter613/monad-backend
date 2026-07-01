@@ -9,11 +9,13 @@
     "start": "bun src/index.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "check": "bun test && bun run typecheck"
+    "check": "bun test && bun run typecheck",
+    "db:check": "bun src/scripts/check-database.ts"
   },
   "dependencies": {
     "@open-backend-cloud/config": "workspace:*",
-    "elysia": "latest"
+    "elysia": "latest",
+    "@open-backend-cloud/database": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

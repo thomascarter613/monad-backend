@@ -93,23 +93,25 @@ export interface ControlPlaneStoreHealth {
 }
 
 export interface ControlPlaneStore {
-  health(): ControlPlaneStoreHealth;
+  health(): Promise<ControlPlaneStoreHealth>;
 
-  createOrganization(input: CreateOrganizationInput): Organization;
-  listOrganizations(): readonly Organization[];
-  getOrganization(organizationId: string): Organization | undefined;
+  createOrganization(input: CreateOrganizationInput): Promise<Organization>;
+  listOrganizations(): Promise<readonly Organization[]>;
+  getOrganization(organizationId: string): Promise<Organization | undefined>;
 
-  createProject(input: CreateProjectInput): Project;
-  listProjects(filter?: ListProjectsFilter): readonly Project[];
-  getProject(projectId: string): Project | undefined;
+  createProject(input: CreateProjectInput): Promise<Project>;
+  listProjects(filter?: ListProjectsFilter): Promise<readonly Project[]>;
+  getProject(projectId: string): Promise<Project | undefined>;
 
   createProjectEnvironment(
     input: CreateProjectEnvironmentInput,
-  ): ProjectEnvironment;
-  listProjectEnvironments(projectId: string): readonly ProjectEnvironment[];
-  getEnvironment(environmentId: string): ProjectEnvironment | undefined;
+  ): Promise<ProjectEnvironment>;
+  listProjectEnvironments(
+    projectId: string,
+  ): Promise<readonly ProjectEnvironment[]>;
+  getEnvironment(environmentId: string): Promise<ProjectEnvironment | undefined>;
 
-  listAuditEvents(filter?: ListAuditEventsFilter): readonly AuditEvent[];
+  listAuditEvents(filter?: ListAuditEventsFilter): Promise<readonly AuditEvent[]>;
 }
 
 function now(): string {
@@ -135,7 +137,7 @@ export class InMemoryControlPlaneStore implements ControlPlaneStore {
   private readonly environments = new Map<string, ProjectEnvironment>();
   private readonly auditEvents: AuditEvent[] = [];
 
-  health(): ControlPlaneStoreHealth {
+  async health(): Promise<ControlPlaneStoreHealth> {
     return {
       organizations: this.organizations.size,
       projects: this.projects.size,
@@ -144,7 +146,9 @@ export class InMemoryControlPlaneStore implements ControlPlaneStore {
     };
   }
 
-  createOrganization(input: CreateOrganizationInput): Organization {
+  async createOrganization(
+    input: CreateOrganizationInput,
+  ): Promise<Organization> {
     const timestamp = now();
     const organization: Organization = {
       id: id("org"),
@@ -170,17 +174,19 @@ export class InMemoryControlPlaneStore implements ControlPlaneStore {
     return organization;
   }
 
-  listOrganizations(): readonly Organization[] {
+  async listOrganizations(): Promise<readonly Organization[]> {
     return [...this.organizations.values()].sort((a, b) =>
       a.createdAt.localeCompare(b.createdAt),
     );
   }
 
-  getOrganization(organizationId: string): Organization | undefined {
+  async getOrganization(
+    organizationId: string,
+  ): Promise<Organization | undefined> {
     return this.organizations.get(organizationId);
   }
 
-  createProject(input: CreateProjectInput): Project {
+  async createProject(input: CreateProjectInput): Promise<Project> {
     const timestamp = now();
     const project: Project = {
       id: id("proj"),
@@ -208,7 +214,9 @@ export class InMemoryControlPlaneStore implements ControlPlaneStore {
     return project;
   }
 
-  listProjects(filter: ListProjectsFilter = {}): readonly Project[] {
+  async listProjects(
+    filter: ListProjectsFilter = {},
+  ): Promise<readonly Project[]> {
     return [...this.projects.values()]
       .filter((project) =>
         filter.organizationId
@@ -218,14 +226,14 @@ export class InMemoryControlPlaneStore implements ControlPlaneStore {
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   }
 
-  getProject(projectId: string): Project | undefined {
+  async getProject(projectId: string): Promise<Project | undefined> {
     return this.projects.get(projectId);
   }
 
-  createProjectEnvironment(
+  async createProjectEnvironment(
     input: CreateProjectEnvironmentInput,
-  ): ProjectEnvironment {
-    const project = this.getProject(input.projectId);
+  ): Promise<ProjectEnvironment> {
+    const project = await this.getProject(input.projectId);
 
     if (!project) {
       throw new Error(`Project not found: ${input.projectId}`);
@@ -261,17 +269,23 @@ export class InMemoryControlPlaneStore implements ControlPlaneStore {
     return environment;
   }
 
-  listProjectEnvironments(projectId: string): readonly ProjectEnvironment[] {
+  async listProjectEnvironments(
+    projectId: string,
+  ): Promise<readonly ProjectEnvironment[]> {
     return [...this.environments.values()]
       .filter((environment) => environment.projectId === projectId)
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   }
 
-  getEnvironment(environmentId: string): ProjectEnvironment | undefined {
+  async getEnvironment(
+    environmentId: string,
+  ): Promise<ProjectEnvironment | undefined> {
     return this.environments.get(environmentId);
   }
 
-  listAuditEvents(filter: ListAuditEventsFilter = {}): readonly AuditEvent[] {
+  async listAuditEvents(
+    filter: ListAuditEventsFilter = {},
+  ): Promise<readonly AuditEvent[]> {
     const limit = filter.limit ?? 100;
 
     return this.auditEvents
@@ -308,6 +322,6 @@ export class InMemoryControlPlaneStore implements ControlPlaneStore {
   }
 }
 
-export function createControlPlaneStore(): ControlPlaneStore {
+export function createInMemoryControlPlaneStore(): ControlPlaneStore {
   return new InMemoryControlPlaneStore();
 }

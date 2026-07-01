@@ -12,18 +12,19 @@ export function createHealthRoutes(
       service: config.serviceName,
       timestamp: new Date().toISOString(),
     }))
-    .get("/ready", () => ({
+    .get("/ready", async () => ({
       status: "ready" as const,
       service: config.serviceName,
       checks: {
         controlPlaneStore: "ok",
       },
-      store: store.health(),
+      store: await store.health(),
       timestamp: new Date().toISOString(),
     }))
     .get("/version", () => ({
       service: config.serviceName,
       version: config.version,
       environment: config.environment,
+      storeMode: config.storeMode,
     }));
 }

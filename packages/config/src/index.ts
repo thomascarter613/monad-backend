@@ -7,6 +7,14 @@ export type RuntimeEnvironment =
 
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error";
 
+export type ControlApiStoreMode = "memory" | "database";
+
+export interface ControlPlaneDatabaseConfig {
+  readonly url: string | undefined;
+  readonly schema: string;
+  readonly maxConnections: number;
+}
+
 export interface ControlApiConfig {
   readonly serviceName: "control-api";
   readonly version: string;
@@ -15,6 +23,8 @@ export interface ControlApiConfig {
   readonly port: number;
   readonly publicBaseUrl: string;
   readonly logLevel: LogLevel;
+  readonly storeMode: ControlApiStoreMode;
+  readonly database: ControlPlaneDatabaseConfig;
 }
 
 function readString(
@@ -24,6 +34,14 @@ function readString(
 ): string {
   const value = env[key];
   return value && value.trim().length > 0 ? value.trim() : fallback;
+}
+
+function readOptionalString(
+  env: Record<string, string | undefined>,
+  key: string,
+): string | undefined {
+  const value = env[key];
+  return value && value.trim().length > 0 ? value.trim() : undefined;
 }
 
 function readNumber(
@@ -84,6 +102,20 @@ function readLogLevel(env: Record<string, string | undefined>): LogLevel {
   );
 }
 
+function readStoreMode(
+  env: Record<string, string | undefined>,
+): ControlApiStoreMode {
+  const value = readString(env, "CONTROL_API_STORE_MODE", "memory");
+
+  if (value === "memory" || value === "database") {
+    return value;
+  }
+
+  throw new Error(
+    `CONTROL_API_STORE_MODE must be either memory or database. Received: ${value}`,
+  );
+}
+
 export function loadControlApiConfig(
   env: Record<string, string | undefined> = Bun.env,
 ): ControlApiConfig {
@@ -102,5 +134,13 @@ export function loadControlApiConfig(
       `http://${hostname}:${port}`,
     ),
     logLevel: readLogLevel(env),
+    storeMode: readStoreMode(env),
+    database: {
+      url:
+        readOptionalString(env, "CONTROL_PLANE_DATABASE_URL") ??
+        readOptionalString(env, "DATABASE_URL"),
+      schema: readString(env, "CONTROL_PLANE_DATABASE_SCHEMA", "platform"),
+      maxConnections: readNumber(env, "CONTROL_PLANE_DATABASE_MAX", 5),
+    },
   };
 }

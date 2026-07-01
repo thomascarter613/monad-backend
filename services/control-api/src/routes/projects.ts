@@ -14,8 +14,8 @@ export function createProjectRoutes(store: ControlPlaneStore): Elysia {
   return new Elysia()
     .post(
       "/projects",
-      ({ body, set }) => {
-        const organization = store.getOrganization(body.organizationId);
+      async ({ body, set }) => {
+        const organization = await store.getOrganization(body.organizationId);
 
         if (!organization) {
           return fail(
@@ -26,7 +26,7 @@ export function createProjectRoutes(store: ControlPlaneStore): Elysia {
           );
         }
 
-        const project = store.createProject(body);
+        const project = await store.createProject(body);
         set.status = 201;
 
         return data(project);
@@ -41,9 +41,9 @@ export function createProjectRoutes(store: ControlPlaneStore): Elysia {
     )
     .get(
       "/projects",
-      ({ query }) =>
+      async ({ query }) =>
         list(
-          store.listProjects({
+          await store.listProjects({
             organizationId: query.organizationId,
           }),
         ),
@@ -53,8 +53,8 @@ export function createProjectRoutes(store: ControlPlaneStore): Elysia {
         }),
       },
     )
-    .get("/projects/:projectId", ({ params, set }) => {
-      const project = store.getProject(params.projectId);
+    .get("/projects/:projectId", async ({ params, set }) => {
+      const project = await store.getProject(params.projectId);
 
       if (!project) {
         return fail(
@@ -69,8 +69,8 @@ export function createProjectRoutes(store: ControlPlaneStore): Elysia {
     })
     .post(
       "/projects/:projectId/environments",
-      ({ body, params, set }) => {
-        const project = store.getProject(params.projectId);
+      async ({ body, params, set }) => {
+        const project = await store.getProject(params.projectId);
 
         if (!project) {
           return fail(
@@ -81,7 +81,7 @@ export function createProjectRoutes(store: ControlPlaneStore): Elysia {
           );
         }
 
-        const environment = store.createProjectEnvironment({
+        const environment = await store.createProjectEnvironment({
           projectId: params.projectId,
           name: body.name,
           key: body.key,
@@ -98,8 +98,8 @@ export function createProjectRoutes(store: ControlPlaneStore): Elysia {
         }),
       },
     )
-    .get("/projects/:projectId/environments", ({ params, set }) => {
-      const project = store.getProject(params.projectId);
+    .get("/projects/:projectId/environments", async ({ params, set }) => {
+      const project = await store.getProject(params.projectId);
 
       if (!project) {
         return fail(
@@ -110,6 +110,6 @@ export function createProjectRoutes(store: ControlPlaneStore): Elysia {
         );
       }
 
-      return list(store.listProjectEnvironments(params.projectId));
+      return list(await store.listProjectEnvironments(params.projectId));
     });
 }

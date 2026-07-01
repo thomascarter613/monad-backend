@@ -6,8 +6,8 @@ export function createOrganizationRoutes(store: ControlPlaneStore): Elysia {
   return new Elysia()
     .post(
       "/organizations",
-      ({ body, set }) => {
-        const organization = store.createOrganization(body);
+      async ({ body, set }) => {
+        const organization = await store.createOrganization(body);
         set.status = 201;
 
         return data(organization);
@@ -19,9 +19,9 @@ export function createOrganizationRoutes(store: ControlPlaneStore): Elysia {
         }),
       },
     )
-    .get("/organizations", () => list(store.listOrganizations()))
-    .get("/organizations/:organizationId", ({ params, set }) => {
-      const organization = store.getOrganization(params.organizationId);
+    .get("/organizations", async () => list(await store.listOrganizations()))
+    .get("/organizations/:organizationId", async ({ params, set }) => {
+      const organization = await store.getOrganization(params.organizationId);
 
       if (!organization) {
         return fail(

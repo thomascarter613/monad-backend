@@ -19,9 +19,9 @@ function parseLimit(value: string | undefined): number | undefined {
 export function createAuditEventRoutes(store: ControlPlaneStore): Elysia {
   return new Elysia().get(
     "/audit-events",
-    ({ query }) =>
+    async ({ query }) =>
       list(
-        store.listAuditEvents({
+        await store.listAuditEvents({
           entityType: query.entityType,
           entityId: query.entityId,
           limit: parseLimit(query.limit),

@@ -6,7 +6,7 @@ It owns the initial HTTP boundary for the platform control plane.
 
 ## Current Scope
 
-This service is intentionally skeletal but runnable.
+This service is intentionally small but runnable.
 
 It currently exposes:
 
@@ -24,11 +24,33 @@ It currently exposes:
 - `GET /environments/:environmentId`
 - `GET /audit-events`
 
+## Store Modes
+
+The Control API supports two store modes.
+
+### `memory`
+
+Default.
+
+Useful for route tests, smoke tests, local API shape work, and development when Supabase/Postgres is not running.
+
+```bash
+CONTROL_API_STORE_MODE=memory bun run control-api:dev
+```
+
+### `database`
+
+Uses the `platform` schema in PostgreSQL.
+
+```bash
+CONTROL_API_STORE_MODE=database \
+CONTROL_PLANE_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+bun run control-api:dev
+```
+
 ## What It Does Not Do Yet
 
 It does not yet provision real Supabase runtimes.
-
-It does not yet persist to the control-plane PostgreSQL database.
 
 It does not yet authenticate requests.
 
@@ -59,3 +81,13 @@ From the repo root:
 ```bash
 bun run control-api:check
 ```
+
+## Database Validation
+
+With local Supabase running and reset:
+
+```bash
+CONTROL_PLANE_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+bun run control-api:db:check
+```
+

@@ -8,10 +8,8 @@ import { createEnvironmentRoutes } from "./routes/environments";
 import { createHealthRoutes } from "./routes/health";
 import { createOrganizationRoutes } from "./routes/organizations";
 import { createProjectRoutes } from "./routes/projects";
-import {
-  type ControlPlaneStore,
-  createControlPlaneStore,
-} from "./state/control-plane-store";
+import type { ControlPlaneStore } from "./state/control-plane-store";
+import { createConfiguredControlPlaneStore } from "./state/configured-control-plane-store";
 
 export interface ControlApiDependencies {
   readonly config?: ControlApiConfig;
@@ -22,7 +20,8 @@ export function createControlApiApp(
   dependencies: ControlApiDependencies = {},
 ): Elysia {
   const config = dependencies.config ?? loadControlApiConfig();
-  const store = dependencies.store ?? createControlPlaneStore();
+  const store =
+    dependencies.store ?? createConfiguredControlPlaneStore(config);
 
   return new Elysia()
     .onError(({ code, error, set }) => {
@@ -38,6 +37,7 @@ export function createControlApiApp(
         };
       }
 
+      console.error(error);
       set.status = 500;
 
       return {

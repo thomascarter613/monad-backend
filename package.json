@@ -16,7 +16,7 @@
     "biome:check": "biome check .",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "check": "bun run check:base && bun run control-api:check",
+    "check": "bun run check:base && bun run check:wp0005",
     "docs:check": "bun scripts/check-doc-links.ts",
     "foundation:check": "bun scripts/check-foundation.ts",
     "hooks:install": "lefthook install",
@@ -39,7 +39,12 @@
     "control-api:start": "cd services/control-api && bun run start",
     "control-api:check": "cd services/control-api && bun run check",
     "control-api:test": "cd services/control-api && bun test",
-    "check:base": "bun run typecheck && bun run biome:check && bun run docs:check && bun run foundation:check && bun run control-plane:check"
+    "check:base": "bun run typecheck && bun run biome:check && bun run docs:check && bun run foundation:check && bun run control-plane:check",
+    "config:check": "cd packages/config && bun run check",
+    "database:check": "cd packages/database && bun run check",
+    "sdk:check": "cd packages/sdk && bun run check",
+    "control-api:db:check": "cd services/control-api && bun run db:check",
+    "check:wp0005": "bun run config:check && bun run database:check && bun run sdk:check && bun run control-api:check"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
