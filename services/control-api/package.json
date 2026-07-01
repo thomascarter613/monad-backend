@@ -1,0 +1,22 @@
+{
+  "name": "@open-backend-cloud/control-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "check": "bun test && bun run typecheck"
+  },
+  "dependencies": {
+    "@open-backend-cloud/config": "workspace:*",
+    "elysia": "latest"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "latest"
+  }
+}

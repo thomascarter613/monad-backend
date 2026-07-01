@@ -7,6 +7,7 @@
 
 ## Architecture
 
+- [Service Boundaries](architecture/service-boundaries.md)
 - [Architecture overview](architecture/overview.md)
 - [Control plane and runtime plane](architecture/control-plane-runtime-plane.md)
 - [Control-plane data model](architecture/control-plane-data-model.md)
@@ -36,3 +37,11 @@
 ```txt
 WP-0004: Control API Skeleton and Platform Service Boundaries
 ```
+
+## API
+
+- [Control API](api/control-api.md)
+
+## Work Packets
+
+- [WP-0004: Control API Skeleton and Platform Service Boundaries](work-packets/WP-0004-control-api-skeleton-and-platform-service-boundaries.md)

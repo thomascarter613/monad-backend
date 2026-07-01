@@ -1,27 +1,106 @@
-export type AppEnvironment = "local" | "development" | "staging" | "production" | "preview";
+export type RuntimeEnvironment =
+  | "local"
+  | "test"
+  | "development"
+  | "staging"
+  | "production";
 
-export interface RuntimeDefaults {
-  readonly projectId: string;
-  readonly apiPort: number;
-  readonly dbPort: number;
-  readonly studioPort: number;
-  readonly inbucketPort: number;
+export type LogLevel = "trace" | "debug" | "info" | "warn" | "error";
+
+export interface ControlApiConfig {
+  readonly serviceName: "control-api";
+  readonly version: string;
+  readonly environment: RuntimeEnvironment;
+  readonly hostname: string;
+  readonly port: number;
+  readonly publicBaseUrl: string;
+  readonly logLevel: LogLevel;
 }
 
-export const runtimeDefaults: RuntimeDefaults = {
-  projectId: "open-backend-cloud-runtime",
-  apiPort: 54321,
-  dbPort: 54322,
-  studioPort: 54323,
-  inbucketPort: 54324,
-};
+function readString(
+  env: Record<string, string | undefined>,
+  key: string,
+  fallback: string,
+): string {
+  const value = env[key];
+  return value && value.trim().length > 0 ? value.trim() : fallback;
+}
 
-export function requireEnvironmentVariable(name: string): string {
-  const value = process.env[name];
+function readNumber(
+  env: Record<string, string | undefined>,
+  key: string,
+  fallback: number,
+): number {
+  const value = env[key];
 
-  if (!value || value.trim().length === 0) {
-    throw new Error(`Missing required environment variable: ${name}`);
+  if (!value) {
+    return fallback;
   }
 
-  return value;
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Environment variable ${key} must be a finite number.`);
+  }
+
+  return parsed;
+}
+
+function readRuntimeEnvironment(
+  env: Record<string, string | undefined>,
+): RuntimeEnvironment {
+  const value = readString(env, "CONTROL_API_ENV", "local");
+
+  if (
+    value === "local" ||
+    value === "test" ||
+    value === "development" ||
+    value === "staging" ||
+    value === "production"
+  ) {
+    return value;
+  }
+
+  throw new Error(
+    `CONTROL_API_ENV must be one of local, test, development, staging, production. Received: ${value}`,
+  );
+}
+
+function readLogLevel(env: Record<string, string | undefined>): LogLevel {
+  const value = readString(env, "CONTROL_API_LOG_LEVEL", "info");
+
+  if (
+    value === "trace" ||
+    value === "debug" ||
+    value === "info" ||
+    value === "warn" ||
+    value === "error"
+  ) {
+    return value;
+  }
+
+  throw new Error(
+    `CONTROL_API_LOG_LEVEL must be one of trace, debug, info, warn, error. Received: ${value}`,
+  );
+}
+
+export function loadControlApiConfig(
+  env: Record<string, string | undefined> = Bun.env,
+): ControlApiConfig {
+  const hostname = readString(env, "CONTROL_API_HOST", "127.0.0.1");
+  const port = readNumber(env, "CONTROL_API_PORT", 4310);
+
+  return {
+    serviceName: "control-api",
+    version: readString(env, "CONTROL_API_VERSION", "0.1.0"),
+    environment: readRuntimeEnvironment(env),
+    hostname,
+    port,
+    publicBaseUrl: readString(
+      env,
+      "CONTROL_API_PUBLIC_BASE_URL",
+      `http://${hostname}:${port}`,
+    ),
+    logLevel: readLogLevel(env),
+  };
 }
