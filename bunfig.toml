@@ -1,0 +1,7 @@
+[install]
+# Keep installs deterministic once bun.lock is committed by the developer.
+lockfile = true
+
+[test]
+# Tests are intentionally lightweight during WP-0002.
+coverage = false

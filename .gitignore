@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+.pnp.*
+
+# Runtime / build outputs
+dist/
+build/
+coverage/
+.turbo/
+.next/
+.vinxi/
+.output/
+.cache/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.local.example
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Supabase local runtime state
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+supabase/.env.*
+!supabase/.env.example
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Test artifacts
+playwright-report/
+test-results/
+
+# Package-manager lockfiles should be committed when generated.

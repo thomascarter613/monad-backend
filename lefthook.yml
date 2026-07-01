@@ -1,0 +1,15 @@
+pre-commit:
+  parallel: true
+  commands:
+    biome-check:
+      glob: "*.{js,jsx,ts,tsx,json,jsonc,css,md}"
+      run: bunx biome check --write {staged_files}
+      stage_fixed: true
+    foundation-check:
+      run: bun run foundation:check
+
+pre-push:
+  parallel: false
+  commands:
+    repo-check:
+      run: bun run check
