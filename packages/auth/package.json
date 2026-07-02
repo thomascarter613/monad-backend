@@ -1,5 +1,5 @@
 {
-  "name": "@monad-backend/sdk",
+  "name": "@monad-backend/auth",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,6 +11,7 @@
   "scripts": {
     "check": "tsc --noEmit -p tsconfig.json"
   },
+  "dependencies": {},
   "devDependencies": {
     "@types/bun": "latest",
     "typescript": "latest"

@@ -44,5 +44,10 @@ WP-0004: Control API Skeleton and Platform Service Boundaries
 
 ## Work Packets
 
+- [WP-0007: API Key Management and Audit Actor Propagation](work-packets/WP-0007-api-key-management-and-audit-actor-propagation.md)
+- WP-0006: Control API Authentication Boundary and API Key Model
 - WP-0005: Control API Database Adapter and Persistence Boundary
 - [WP-0004: Control API Skeleton and Platform Service Boundaries](work-packets/WP-0004-control-api-skeleton-and-platform-service-boundaries.md)
+
+## Security
+

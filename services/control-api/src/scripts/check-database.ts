@@ -1,9 +1,11 @@
-import { loadControlApiConfig } from "@open-backend-cloud/config";
+import { loadControlApiConfig } from "@monad-backend/config";
 import {
+  createApiKeySql,
   createControlPlaneSql,
   createPostgresControlPlaneRepository,
+  validateApiKeySchema,
   validateControlPlaneSchema,
-} from "@open-backend-cloud/database";
+} from "@monad-backend/database";
 
 const config = loadControlApiConfig({
   ...Bun.env,
@@ -22,24 +24,36 @@ if (!config.database.url) {
   process.exit(1);
 }
 
-const sql = createControlPlaneSql({
+const controlPlaneSql = createControlPlaneSql({
+  url: config.database.url,
+  maxConnections: 1,
+});
+
+const apiKeySql = createApiKeySql({
   url: config.database.url,
   maxConnections: 1,
 });
 
 try {
   const schemaResult = await validateControlPlaneSchema(
-    sql,
+    controlPlaneSql,
     config.database.schema,
   );
 
-  if (!schemaResult.ok) {
+  const apiKeySchemaResult = await validateApiKeySchema(
+    apiKeySql,
+    config.database.schema,
+  );
+
+  const missing = [...schemaResult.missing, ...apiKeySchemaResult.missing];
+
+  if (missing.length > 0) {
     console.error("Control-plane database schema validation failed.");
     console.error("");
     console.error("Missing required columns:");
 
-    for (const missing of schemaResult.missing) {
-      console.error(`  - ${missing}`);
+    for (const item of missing) {
+      console.error(`  - ${item}`);
     }
 
     process.exit(1);
@@ -60,6 +74,7 @@ try {
         {
           schema: config.database.schema,
           health,
+          apiKeySchema: "ok",
         },
         null,
         2,
@@ -69,5 +84,6 @@ try {
     await repository.close();
   }
 } finally {
-  await sql.end({ timeout: 5 });
+  await controlPlaneSql.end({ timeout: 5 });
+  await apiKeySql.end({ timeout: 5 });
 }

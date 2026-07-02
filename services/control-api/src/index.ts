@@ -1,10 +1,12 @@
-import { loadControlApiConfig } from "@open-backend-cloud/config";
+import { loadControlApiConfig } from "@monad-backend/config";
 import { createControlApiApp } from "./app";
+import { createConfiguredControlApiAuthenticator } from "./auth/control-api-authenticator";
 import { createConfiguredControlPlaneStore } from "./state/configured-control-plane-store";
 
 const config = loadControlApiConfig();
 const store = createConfiguredControlPlaneStore(config);
-const app = createControlApiApp({ config, store });
+const authenticator = createConfiguredControlApiAuthenticator(config);
+const app = createControlApiApp({ config, store, authenticator });
 
 app.listen({
   hostname: config.hostname,
@@ -12,5 +14,5 @@ app.listen({
 });
 
 console.log(
-  `[${config.serviceName}] listening on ${config.publicBaseUrl} in ${config.environment} mode using ${config.storeMode} store`,
+  `[${config.serviceName}] listening on ${config.publicBaseUrl} in ${config.environment} mode using ${config.storeMode} store and ${config.auth.mode} auth`,
 );

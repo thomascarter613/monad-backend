@@ -75,7 +75,7 @@ write_json(root, pkg)
 
 database_pkg_path = Path("packages/database/package.json")
 database_pkg = read_json(database_pkg_path, {
-    "name": "@open-backend-cloud/database",
+    "name": "@monad-backend/database",
     "version": "0.1.0",
     "private": True,
     "type": "module",
@@ -89,7 +89,7 @@ database_pkg = read_json(database_pkg_path, {
     "devDependencies": {}
 })
 
-database_pkg.setdefault("name", "@open-backend-cloud/database")
+database_pkg.setdefault("name", "@monad-backend/database")
 database_pkg.setdefault("version", "0.1.0")
 database_pkg.setdefault("private", True)
 database_pkg.setdefault("type", "module")
@@ -105,7 +105,7 @@ write_json(database_pkg_path, database_pkg)
 
 control_api_pkg_path = Path("services/control-api/package.json")
 control_api_pkg = read_json(control_api_pkg_path, {
-    "name": "@open-backend-cloud/control-api",
+    "name": "@monad-backend/control-api",
     "version": "0.1.0",
     "private": True,
     "type": "module",
@@ -124,8 +124,8 @@ control_api_pkg["scripts"]["check"] = "bun test && bun run typecheck"
 control_api_pkg["scripts"]["db:check"] = "bun src/scripts/check-database.ts"
 
 control_api_pkg.setdefault("dependencies", {})
-control_api_pkg["dependencies"]["@open-backend-cloud/config"] = "workspace:*"
-control_api_pkg["dependencies"]["@open-backend-cloud/database"] = "workspace:*"
+control_api_pkg["dependencies"]["@monad-backend/config"] = "workspace:*"
+control_api_pkg["dependencies"]["@monad-backend/database"] = "workspace:*"
 control_api_pkg["dependencies"]["elysia"] = "latest"
 
 control_api_pkg.setdefault("devDependencies", {})
@@ -1373,8 +1373,8 @@ export function createInMemoryControlPlaneStore(): ControlPlaneStore {
 EOF
 
 cat > services/control-api/src/state/database-control-plane-store.ts <<'EOF'
-import type { ControlApiConfig } from "@open-backend-cloud/config";
-import { createPostgresControlPlaneRepository } from "@open-backend-cloud/database";
+import type { ControlApiConfig } from "@monad-backend/config";
+import { createPostgresControlPlaneRepository } from "@monad-backend/database";
 import type { ControlPlaneStore } from "./control-plane-store";
 
 export function createDatabaseControlPlaneStore(
@@ -1395,7 +1395,7 @@ export function createDatabaseControlPlaneStore(
 EOF
 
 cat > services/control-api/src/state/configured-control-plane-store.ts <<'EOF'
-import type { ControlApiConfig } from "@open-backend-cloud/config";
+import type { ControlApiConfig } from "@monad-backend/config";
 import type { ControlPlaneStore } from "./control-plane-store";
 import { createInMemoryControlPlaneStore } from "./control-plane-store";
 import { createDatabaseControlPlaneStore } from "./database-control-plane-store";
@@ -1412,7 +1412,7 @@ export function createConfiguredControlPlaneStore(
 EOF
 
 cat > services/control-api/src/routes/health.ts <<'EOF'
-import type { ControlApiConfig } from "@open-backend-cloud/config";
+import type { ControlApiConfig } from "@monad-backend/config";
 import { Elysia } from "elysia";
 import type { ControlPlaneStore } from "../state/control-plane-store";
 
@@ -1673,7 +1673,7 @@ cat > services/control-api/src/app.ts <<'EOF'
 import {
   type ControlApiConfig,
   loadControlApiConfig,
-} from "@open-backend-cloud/config";
+} from "@monad-backend/config";
 import { Elysia } from "elysia";
 import { createAuditEventRoutes } from "./routes/audit-events";
 import { createEnvironmentRoutes } from "./routes/environments";
@@ -1728,7 +1728,7 @@ export function createControlApiApp(
 EOF
 
 cat > services/control-api/src/index.ts <<'EOF'
-import { loadControlApiConfig } from "@open-backend-cloud/config";
+import { loadControlApiConfig } from "@monad-backend/config";
 import { createControlApiApp } from "./app";
 import { createConfiguredControlPlaneStore } from "./state/configured-control-plane-store";
 
@@ -1747,12 +1747,12 @@ console.log(
 EOF
 
 cat > services/control-api/src/scripts/check-database.ts <<'EOF'
-import { loadControlApiConfig } from "@open-backend-cloud/config";
+import { loadControlApiConfig } from "@monad-backend/config";
 import {
   createControlPlaneSql,
   createPostgresControlPlaneRepository,
   validateControlPlaneSchema,
-} from "@open-backend-cloud/database";
+} from "@monad-backend/database";
 
 const config = loadControlApiConfig({
   ...Bun.env,

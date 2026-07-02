@@ -1,4 +1,4 @@
-# `@open-backend-cloud/database`
+# `@monad-backend/database`
 
 Shared database-facing types and schema constants.
 

@@ -10,7 +10,11 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "types": ["bun"]
+    "types": ["bun"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
   "include": ["apps/**/*.ts", "services/**/*.ts", "packages/**/*.ts", "scripts/**/*.ts"],
   "exclude": ["node_modules", "dist", "build", "supabase/functions"]

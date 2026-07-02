@@ -13,18 +13,30 @@
         "typescript": "^5.0.0",
       },
     },
-    "packages/config": {
-      "name": "@open-backend-cloud/config",
+    "packages/auth": {
+      "name": "@monad-backend/auth",
       "version": "0.1.0",
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "latest",
       },
     },
+    "packages/config": {
+      "name": "@monad-backend/config",
+      "version": "0.1.0",
+      "dependencies": {
+        "@monad-backend/auth": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "latest",
+      },
+    },
     "packages/database": {
-      "name": "@open-backend-cloud/database",
+      "name": "@monad-backend/database",
       "version": "0.0.0",
       "dependencies": {
+        "@monad-backend/auth": "workspace:*",
         "postgres": "latest",
       },
       "devDependencies": {
@@ -33,15 +45,15 @@
       },
     },
     "packages/domain": {
-      "name": "@open-backend-cloud/domain",
+      "name": "@monad-backend/domain",
       "version": "0.0.0",
     },
     "packages/events": {
-      "name": "@open-backend-cloud/events",
+      "name": "@monad-backend/events",
       "version": "0.0.0",
     },
     "packages/sdk": {
-      "name": "@open-backend-cloud/sdk",
+      "name": "@monad-backend/sdk",
       "version": "0.1.0",
       "devDependencies": {
         "@types/bun": "latest",
@@ -49,11 +61,12 @@
       },
     },
     "services/control-api": {
-      "name": "@open-backend-cloud/control-api",
+      "name": "@monad-backend/control-api",
       "version": "0.1.0",
       "dependencies": {
-        "@open-backend-cloud/config": "workspace:*",
-        "@open-backend-cloud/database": "workspace:*",
+        "@monad-backend/auth": "workspace:*",
+        "@monad-backend/config": "workspace:*",
+        "@monad-backend/database": "workspace:*",
         "elysia": "latest",
       },
       "devDependencies": {
@@ -85,23 +98,25 @@
 
     "@ecies/ciphers": ["@ecies/ciphers@0.2.6", "", { "peerDependencies": { "@noble/ciphers": "^1.0.0" } }, "sha512-patgsRPKGkhhoBjETV4XxD0En4ui5fbX0hzayqI3M8tvNMGUoUvmyYAIWwlxBc1KX5cturfqByYdj5bYGRpN9g=="],
 
+    "@monad-backend/auth": ["@monad-backend/auth@workspace:packages/auth"],
+
+    "@monad-backend/config": ["@monad-backend/config@workspace:packages/config"],
+
+    "@monad-backend/control-api": ["@monad-backend/control-api@workspace:services/control-api"],
+
+    "@monad-backend/database": ["@monad-backend/database@workspace:packages/database"],
+
+    "@monad-backend/domain": ["@monad-backend/domain@workspace:packages/domain"],
+
+    "@monad-backend/events": ["@monad-backend/events@workspace:packages/events"],
+
+    "@monad-backend/sdk": ["@monad-backend/sdk@workspace:packages/sdk"],
+
     "@noble/ciphers": ["@noble/ciphers@1.3.0", "", {}, "sha512-2I0gnIVPtfnMw9ee9h1dJG7tp81+8Ob3OJb3Mv37rx5L40/b0i7djjCVvGOVqc9AEIQyvyu1i6ypKdFw8R8gQw=="],
 
     "@noble/curves": ["@noble/curves@1.9.7", "", { "dependencies": { "@noble/hashes": "1.8.0" } }, "sha512-gbKGcRUYIjA3/zCCNaWDciTMFI0dCkvou3TL8Zmy5Nc7sJ47a0jtOeZoTaMxkuqRo9cRhjOdZJXegxYE5FN/xw=="],
 
     "@noble/hashes": ["@noble/hashes@1.8.0", "", {}, "sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A=="],
-
-    "@open-backend-cloud/config": ["@open-backend-cloud/config@workspace:packages/config"],
-
-    "@open-backend-cloud/control-api": ["@open-backend-cloud/control-api@workspace:services/control-api"],
-
-    "@open-backend-cloud/database": ["@open-backend-cloud/database@workspace:packages/database"],
-
-    "@open-backend-cloud/domain": ["@open-backend-cloud/domain@workspace:packages/domain"],
-
-    "@open-backend-cloud/events": ["@open-backend-cloud/events@workspace:packages/events"],
-
-    "@open-backend-cloud/sdk": ["@open-backend-cloud/sdk@workspace:packages/sdk"],
 
     "@sinclair/typebox": ["@sinclair/typebox@0.34.49", "", {}, "sha512-brySQQs7Jtn0joV8Xh9ZV/hZb9Ozb0pmazDIASBkYKCjXrXU3mpcFahmK/z4YDhGkQvP9mWJbVyahdtU5wQA+A=="],
 
@@ -191,13 +206,15 @@
 
     "undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
-    "@open-backend-cloud/config/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
+    "@monad-backend/auth/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
-    "@open-backend-cloud/control-api/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
+    "@monad-backend/config/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
-    "@open-backend-cloud/database/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
+    "@monad-backend/control-api/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
-    "@open-backend-cloud/sdk/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
+    "@monad-backend/database/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
+
+    "@monad-backend/sdk/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
     "bun-types/@types/node": ["@types/node@26.1.0", "", { "dependencies": { "undici-types": "~8.3.0" } }, "sha512-O0A1G3xPGy4w7AgQdAQYUlQ+BKk2Oovw8eRpofyp5KdBZULnbe+WqaOVNrm705SHphCiG4XHsACrSmPu1f+Kgw=="],
 

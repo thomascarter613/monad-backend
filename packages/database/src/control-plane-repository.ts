@@ -1,3 +1,8 @@
+import {
+  type ApiKeyPrincipal,
+  type ApiKeyScope,
+  generateApiKey,
+} from "@monad-backend/auth";
 import postgres from "postgres";
 
 export type ControlPlaneSql = ReturnType<typeof postgres>;
@@ -19,11 +24,16 @@ export type EnvironmentKey =
   | "production";
 
 export type AuditActorType = "system" | "user" | "api_key" | "service";
+export type ApiKeyStatus = "active" | "disabled" | "revoked";
 
 export interface ControlPlaneDatabaseOptions {
   readonly url: string;
   readonly schema?: string;
   readonly maxConnections?: number;
+}
+
+export interface OperationContext {
+  readonly actor?: ApiKeyPrincipal;
 }
 
 export interface Organization {
@@ -68,6 +78,24 @@ export interface AuditEvent {
   readonly createdAt: string;
 }
 
+export interface ApiKeyRecord {
+  readonly id: string;
+  readonly organizationId: string | null;
+  readonly name: string;
+  readonly keyPrefix: string;
+  readonly scopes: readonly ApiKeyScope[];
+  readonly status: ApiKeyStatus;
+  readonly expiresAt: string | null;
+  readonly lastUsedAt: string | null;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export interface CreatedApiKey {
+  readonly apiKey: string;
+  readonly record: ApiKeyRecord;
+}
+
 export interface CreateOrganizationInput {
   readonly name: string;
   readonly slug?: string;
@@ -85,8 +113,29 @@ export interface CreateProjectEnvironmentInput {
   readonly key?: EnvironmentKey;
 }
 
+export interface CreateApiKeyInput {
+  readonly organizationId?: string | null;
+  readonly name: string;
+  readonly scopes?: readonly ApiKeyScope[];
+  readonly expiresAt?: string | null;
+}
+
+export interface RotateApiKeyInput {
+  readonly apiKeyId: string;
+  readonly expiresAt?: string | null;
+}
+
+export interface RevokeApiKeyInput {
+  readonly apiKeyId: string;
+}
+
 export interface ListProjectsFilter {
   readonly organizationId?: string;
+}
+
+export interface ListApiKeysFilter {
+  readonly organizationId?: string;
+  readonly status?: ApiKeyStatus;
 }
 
 export interface ListAuditEventsFilter {
@@ -144,6 +193,19 @@ interface AuditEventRow {
   readonly created_at: string | Date;
 }
 
+interface ApiKeyRecordRow {
+  readonly id: string;
+  readonly organization_id: string | null;
+  readonly name: string;
+  readonly key_prefix: string;
+  readonly scopes: string[] | null;
+  readonly status: ApiKeyStatus;
+  readonly expires_at: string | Date | null;
+  readonly last_used_at: string | Date | null;
+  readonly created_at: string | Date;
+  readonly updated_at: string | Date;
+}
+
 interface CountRow {
   readonly count: number | string;
 }
@@ -197,6 +259,19 @@ const requiredColumns: Record<string, readonly string[]> = {
     "payload",
     "created_at",
   ],
+  api_keys: [
+    "id",
+    "organization_id",
+    "name",
+    "key_prefix",
+    "key_hash",
+    "scopes",
+    "status",
+    "expires_at",
+    "last_used_at",
+    "created_at",
+    "updated_at",
+  ],
 };
 
 function assertSafeIdentifier(value: string, label: string): void {
@@ -211,6 +286,10 @@ function toIso(value: string | Date): string {
   }
 
   return new Date(value).toISOString();
+}
+
+function toNullableIso(value: string | Date | null): string | null {
+  return value === null ? null : toIso(value);
 }
 
 function toCount(value: number | string): number {
@@ -283,6 +362,41 @@ function mapAuditEvent(row: AuditEventRow): AuditEvent {
   };
 }
 
+function mapApiKeyRecord(row: ApiKeyRecordRow): ApiKeyRecord {
+  return {
+    id: row.id,
+    organizationId: row.organization_id,
+    name: row.name,
+    keyPrefix: row.key_prefix,
+    scopes:
+      row.scopes && row.scopes.length > 0
+        ? (row.scopes as ApiKeyScope[])
+        : ["management:*"],
+    status: row.status,
+    expiresAt: toNullableIso(row.expires_at),
+    lastUsedAt: toNullableIso(row.last_used_at),
+    createdAt: toIso(row.created_at),
+    updatedAt: toIso(row.updated_at),
+  };
+}
+
+function actorFromContext(context: OperationContext = {}): {
+  readonly actorType: AuditActorType;
+  readonly actorId: string | null;
+} {
+  if (!context.actor) {
+    return {
+      actorType: "system",
+      actorId: null,
+    };
+  }
+
+  return {
+    actorType: context.actor.actorType,
+    actorId: context.actor.actorId,
+  };
+}
+
 export function createControlPlaneSql(
   options: ControlPlaneDatabaseOptions,
 ): ControlPlaneSql {
@@ -306,7 +420,8 @@ export async function validateControlPlaneSchema(
         'organizations',
         'projects',
         'project_environments',
-        'audit_events'
+        'audit_events',
+        'api_keys'
       )
   `) as unknown as ColumnRow[];
 
@@ -373,6 +488,7 @@ export class PostgresControlPlaneRepository {
 
   async createOrganization(
     input: CreateOrganizationInput,
+    context: OperationContext = {},
   ): Promise<Organization> {
     const slug = input.slug ?? slugify(input.name);
 
@@ -387,15 +503,18 @@ export class PostgresControlPlaneRepository {
 
     const organization = mapOrganization(rows[0]);
 
-    await this.recordAuditEvent({
-      eventName: "organization.created",
-      entityType: "organization",
-      entityId: organization.id,
-      payload: {
-        organizationId: organization.id,
-        slug: organization.slug,
+    await this.recordAuditEvent(
+      {
+        eventName: "organization.created",
+        entityType: "organization",
+        entityId: organization.id,
+        payload: {
+          organizationId: organization.id,
+          slug: organization.slug,
+        },
       },
-    });
+      context,
+    );
 
     return organization;
   }
@@ -428,7 +547,10 @@ export class PostgresControlPlaneRepository {
     return rows[0] ? mapOrganization(rows[0]) : undefined;
   }
 
-  async createProject(input: CreateProjectInput): Promise<Project> {
+  async createProject(
+    input: CreateProjectInput,
+    context: OperationContext = {},
+  ): Promise<Project> {
     const slug = input.slug ?? slugify(input.name);
 
     const rows = (await this.sql.unsafe(
@@ -444,16 +566,19 @@ export class PostgresControlPlaneRepository {
 
     const project = mapProject(rows[0]);
 
-    await this.recordAuditEvent({
-      eventName: "project.created",
-      entityType: "project",
-      entityId: project.id,
-      payload: {
-        organizationId: project.organizationId,
-        projectId: project.id,
-        slug: project.slug,
+    await this.recordAuditEvent(
+      {
+        eventName: "project.created",
+        entityType: "project",
+        entityId: project.id,
+        payload: {
+          organizationId: project.organizationId,
+          projectId: project.id,
+          slug: project.slug,
+        },
       },
-    });
+      context,
+    );
 
     return project;
   }
@@ -498,6 +623,7 @@ export class PostgresControlPlaneRepository {
 
   async createProjectEnvironment(
     input: CreateProjectEnvironmentInput,
+    context: OperationContext = {},
   ): Promise<ProjectEnvironment> {
     const project = await this.getProject(input.projectId);
 
@@ -527,17 +653,20 @@ export class PostgresControlPlaneRepository {
 
     const environment = mapProjectEnvironment(rows[0]);
 
-    await this.recordAuditEvent({
-      eventName: "project_environment.created",
-      entityType: "project_environment",
-      entityId: environment.id,
-      payload: {
-        organizationId: environment.organizationId,
-        projectId: environment.projectId,
-        environmentId: environment.id,
-        key: environment.key,
+    await this.recordAuditEvent(
+      {
+        eventName: "project_environment.created",
+        entityType: "project_environment",
+        entityId: environment.id,
+        payload: {
+          organizationId: environment.organizationId,
+          projectId: environment.projectId,
+          environmentId: environment.id,
+          key: environment.key,
+        },
       },
-    });
+      context,
+    );
 
     return environment;
   }
@@ -590,6 +719,275 @@ export class PostgresControlPlaneRepository {
     )) as unknown as ProjectEnvironmentRow[];
 
     return rows[0] ? mapProjectEnvironment(rows[0]) : undefined;
+  }
+
+  async createApiKey(
+    input: CreateApiKeyInput,
+    context: OperationContext = {},
+  ): Promise<CreatedApiKey> {
+    const generated = generateApiKey();
+    const scopes = input.scopes && input.scopes.length > 0
+      ? [...input.scopes]
+      : ["management:*"];
+
+    const rows = (await this.sql.unsafe(
+      `
+        insert into ${this.table(
+          "api_keys",
+        )} (organization_id, name, key_prefix, key_hash, scopes, status, expires_at)
+        values ($1, $2, $3, $4, $5::text[], 'active', $6)
+        returning
+          id::text,
+          organization_id::text,
+          name,
+          key_prefix,
+          scopes,
+          status,
+          expires_at,
+          last_used_at,
+          created_at,
+          updated_at
+      `,
+      [
+        input.organizationId ?? null,
+        input.name,
+        generated.prefix,
+        generated.hash,
+        scopes,
+        input.expiresAt ?? null,
+      ],
+    )) as unknown as ApiKeyRecordRow[];
+
+    const record = mapApiKeyRecord(rows[0]);
+
+    await this.recordAuditEvent(
+      {
+        eventName: "api_key.created",
+        entityType: "api_key",
+        entityId: record.id,
+        payload: {
+          apiKeyId: record.id,
+          organizationId: record.organizationId,
+          name: record.name,
+          keyPrefix: record.keyPrefix,
+          scopes: record.scopes,
+        },
+      },
+      context,
+    );
+
+    return {
+      apiKey: generated.apiKey,
+      record,
+    };
+  }
+
+  async listApiKeys(
+    filter: ListApiKeysFilter = {},
+  ): Promise<readonly ApiKeyRecord[]> {
+    if (filter.organizationId && filter.status) {
+      const rows = (await this.sql.unsafe(
+        `
+          select
+            id::text,
+            organization_id::text,
+            name,
+            key_prefix,
+            scopes,
+            status,
+            expires_at,
+            last_used_at,
+            created_at,
+            updated_at
+          from ${this.table("api_keys")}
+          where organization_id = $1 and status = $2
+          order by created_at desc
+        `,
+        [filter.organizationId, filter.status],
+      )) as unknown as ApiKeyRecordRow[];
+
+      return rows.map(mapApiKeyRecord);
+    }
+
+    if (filter.organizationId) {
+      const rows = (await this.sql.unsafe(
+        `
+          select
+            id::text,
+            organization_id::text,
+            name,
+            key_prefix,
+            scopes,
+            status,
+            expires_at,
+            last_used_at,
+            created_at,
+            updated_at
+          from ${this.table("api_keys")}
+          where organization_id = $1
+          order by created_at desc
+        `,
+        [filter.organizationId],
+      )) as unknown as ApiKeyRecordRow[];
+
+      return rows.map(mapApiKeyRecord);
+    }
+
+    if (filter.status) {
+      const rows = (await this.sql.unsafe(
+        `
+          select
+            id::text,
+            organization_id::text,
+            name,
+            key_prefix,
+            scopes,
+            status,
+            expires_at,
+            last_used_at,
+            created_at,
+            updated_at
+          from ${this.table("api_keys")}
+          where status = $1
+          order by created_at desc
+        `,
+        [filter.status],
+      )) as unknown as ApiKeyRecordRow[];
+
+      return rows.map(mapApiKeyRecord);
+    }
+
+    const rows = (await this.sql.unsafe(
+      `
+        select
+          id::text,
+          organization_id::text,
+          name,
+          key_prefix,
+          scopes,
+          status,
+          expires_at,
+          last_used_at,
+          created_at,
+          updated_at
+        from ${this.table("api_keys")}
+        order by created_at desc
+      `,
+    )) as unknown as ApiKeyRecordRow[];
+
+    return rows.map(mapApiKeyRecord);
+  }
+
+  async revokeApiKey(
+    input: RevokeApiKeyInput,
+    context: OperationContext = {},
+  ): Promise<ApiKeyRecord | undefined> {
+    const rows = (await this.sql.unsafe(
+      `
+        update ${this.table("api_keys")}
+        set status = 'revoked', updated_at = now()
+        where id = $1
+        returning
+          id::text,
+          organization_id::text,
+          name,
+          key_prefix,
+          scopes,
+          status,
+          expires_at,
+          last_used_at,
+          created_at,
+          updated_at
+      `,
+      [input.apiKeyId],
+    )) as unknown as ApiKeyRecordRow[];
+
+    if (!rows[0]) {
+      return undefined;
+    }
+
+    const record = mapApiKeyRecord(rows[0]);
+
+    await this.recordAuditEvent(
+      {
+        eventName: "api_key.revoked",
+        entityType: "api_key",
+        entityId: record.id,
+        payload: {
+          apiKeyId: record.id,
+          organizationId: record.organizationId,
+          name: record.name,
+          keyPrefix: record.keyPrefix,
+        },
+      },
+      context,
+    );
+
+    return record;
+  }
+
+  async rotateApiKey(
+    input: RotateApiKeyInput,
+    context: OperationContext = {},
+  ): Promise<CreatedApiKey | undefined> {
+    const generated = generateApiKey();
+
+    const rows = (await this.sql.unsafe(
+      `
+        update ${this.table("api_keys")}
+        set
+          key_prefix = $2,
+          key_hash = $3,
+          status = 'active',
+          expires_at = $4,
+          last_used_at = null,
+          updated_at = now()
+        where id = $1
+        returning
+          id::text,
+          organization_id::text,
+          name,
+          key_prefix,
+          scopes,
+          status,
+          expires_at,
+          last_used_at,
+          created_at,
+          updated_at
+      `,
+      [
+        input.apiKeyId,
+        generated.prefix,
+        generated.hash,
+        input.expiresAt ?? null,
+      ],
+    )) as unknown as ApiKeyRecordRow[];
+
+    if (!rows[0]) {
+      return undefined;
+    }
+
+    const record = mapApiKeyRecord(rows[0]);
+
+    await this.recordAuditEvent(
+      {
+        eventName: "api_key.rotated",
+        entityType: "api_key",
+        entityId: record.id,
+        payload: {
+          apiKeyId: record.id,
+          organizationId: record.organizationId,
+          name: record.name,
+          keyPrefix: record.keyPrefix,
+        },
+      },
+      context,
+    );
+
+    return {
+      apiKey: generated.apiKey,
+      record,
+    };
   }
 
   async listAuditEvents(
@@ -687,18 +1085,23 @@ export class PostgresControlPlaneRepository {
     return rows.map(mapAuditEvent);
   }
 
-  private async recordAuditEvent(input: {
-    readonly eventName: string;
-    readonly entityType: string;
-    readonly entityId: string;
-    readonly payload: Record<string, unknown>;
-  }): Promise<AuditEvent> {
+  private async recordAuditEvent(
+    input: {
+      readonly eventName: string;
+      readonly entityType: string;
+      readonly entityId: string;
+      readonly payload: Record<string, unknown>;
+    },
+    context: OperationContext = {},
+  ): Promise<AuditEvent> {
+    const actor = actorFromContext(context);
+
     const rows = (await this.sql.unsafe(
       `
         insert into ${this.table(
           "audit_events",
         )} (event_name, actor_type, actor_id, entity_type, entity_id, payload)
-        values ($1, 'system', null, $2, $3, $4::jsonb)
+        values ($1, $2, $3, $4, $5, $6::jsonb)
         returning
           id::text,
           event_name,
@@ -711,6 +1114,8 @@ export class PostgresControlPlaneRepository {
       `,
       [
         input.eventName,
+        actor.actorType,
+        actor.actorId,
         input.entityType,
         input.entityId,
         JSON.stringify(input.payload),

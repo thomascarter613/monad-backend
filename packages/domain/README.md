@@ -1,4 +1,4 @@
-# `@open-backend-cloud/domain`
+# `@monad-backend/domain`
 
 Shared domain types for the FOSS Supabase Cloud-like control plane.
 

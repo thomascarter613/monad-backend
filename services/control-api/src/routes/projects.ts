@@ -1,4 +1,7 @@
+import type { ControlApiConfig } from "@monad-backend/config";
 import { Elysia, t } from "elysia";
+import { requireControlApiAuth } from "../auth/control-api-authenticator";
+import type { ControlApiAuthenticator } from "../auth/control-api-authenticator";
 import { data, fail, list } from "../http/response";
 import type { ControlPlaneStore } from "../state/control-plane-store";
 
@@ -10,11 +13,27 @@ const environmentKeySchema = t.Union([
   t.Literal("production"),
 ]);
 
-export function createProjectRoutes(store: ControlPlaneStore): Elysia {
+export function createProjectRoutes(
+  config: ControlApiConfig,
+  store: ControlPlaneStore,
+  authenticator: ControlApiAuthenticator,
+): Elysia {
   return new Elysia()
     .post(
       "/projects",
-      async ({ body, set }) => {
+      async ({ body, request, set }) => {
+        const auth = await requireControlApiAuth({
+          request,
+          set,
+          config,
+          authenticator,
+          requiredScope: "projects:write",
+        });
+
+        if (!auth.ok) {
+          return auth.response;
+        }
+
         const organization = await store.getOrganization(body.organizationId);
 
         if (!organization) {
@@ -26,7 +45,9 @@ export function createProjectRoutes(store: ControlPlaneStore): Elysia {
           );
         }
 
-        const project = await store.createProject(body);
+        const project = await store.createProject(body, {
+          actor: auth.principal,
+        });
         set.status = 201;
 
         return data(project);
@@ -41,19 +62,44 @@ export function createProjectRoutes(store: ControlPlaneStore): Elysia {
     )
     .get(
       "/projects",
-      async ({ query }) =>
-        list(
+      async ({ query, request, set }) => {
+        const auth = await requireControlApiAuth({
+          request,
+          set,
+          config,
+          authenticator,
+          requiredScope: "projects:read",
+        });
+
+        if (!auth.ok) {
+          return auth.response;
+        }
+
+        return list(
           await store.listProjects({
             organizationId: query.organizationId,
           }),
-        ),
+        );
+      },
       {
         query: t.Object({
           organizationId: t.Optional(t.String({ minLength: 1 })),
         }),
       },
     )
-    .get("/projects/:projectId", async ({ params, set }) => {
+    .get("/projects/:projectId", async ({ params, request, set }) => {
+      const auth = await requireControlApiAuth({
+        request,
+        set,
+        config,
+        authenticator,
+        requiredScope: "projects:read",
+      });
+
+      if (!auth.ok) {
+        return auth.response;
+      }
+
       const project = await store.getProject(params.projectId);
 
       if (!project) {
@@ -69,7 +115,19 @@ export function createProjectRoutes(store: ControlPlaneStore): Elysia {
     })
     .post(
       "/projects/:projectId/environments",
-      async ({ body, params, set }) => {
+      async ({ body, params, request, set }) => {
+        const auth = await requireControlApiAuth({
+          request,
+          set,
+          config,
+          authenticator,
+          requiredScope: "environments:write",
+        });
+
+        if (!auth.ok) {
+          return auth.response;
+        }
+
         const project = await store.getProject(params.projectId);
 
         if (!project) {
@@ -81,11 +139,16 @@ export function createProjectRoutes(store: ControlPlaneStore): Elysia {
           );
         }
 
-        const environment = await store.createProjectEnvironment({
-          projectId: params.projectId,
-          name: body.name,
-          key: body.key,
-        });
+        const environment = await store.createProjectEnvironment(
+          {
+            projectId: params.projectId,
+            name: body.name,
+            key: body.key,
+          },
+          {
+            actor: auth.principal,
+          },
+        );
 
         set.status = 201;
 
@@ -98,7 +161,19 @@ export function createProjectRoutes(store: ControlPlaneStore): Elysia {
         }),
       },
     )
-    .get("/projects/:projectId/environments", async ({ params, set }) => {
+    .get("/projects/:projectId/environments", async ({ params, request, set }) => {
+      const auth = await requireControlApiAuth({
+        request,
+        set,
+        config,
+        authenticator,
+        requiredScope: "environments:read",
+      });
+
+      if (!auth.ok) {
+        return auth.response;
+      }
+
       const project = await store.getProject(params.projectId);
 
       if (!project) {

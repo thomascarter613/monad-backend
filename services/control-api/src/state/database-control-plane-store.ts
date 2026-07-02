@@ -1,5 +1,5 @@
-import type { ControlApiConfig } from "@open-backend-cloud/config";
-import { createPostgresControlPlaneRepository } from "@open-backend-cloud/database";
+import type { ControlApiConfig } from "@monad-backend/config";
+import { createPostgresControlPlaneRepository } from "@monad-backend/database";
 import type { ControlPlaneStore } from "./control-plane-store";
 
 export function createDatabaseControlPlaneStore(

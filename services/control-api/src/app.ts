@@ -1,8 +1,13 @@
 import {
   type ControlApiConfig,
   loadControlApiConfig,
-} from "@open-backend-cloud/config";
+} from "@monad-backend/config";
 import { Elysia } from "elysia";
+import {
+  type ControlApiAuthenticator,
+  createConfiguredControlApiAuthenticator,
+} from "./auth/control-api-authenticator";
+import { createApiKeyRoutes } from "./routes/api-keys";
 import { createAuditEventRoutes } from "./routes/audit-events";
 import { createEnvironmentRoutes } from "./routes/environments";
 import { createHealthRoutes } from "./routes/health";
@@ -14,6 +19,7 @@ import { createConfiguredControlPlaneStore } from "./state/configured-control-pl
 export interface ControlApiDependencies {
   readonly config?: ControlApiConfig;
   readonly store?: ControlPlaneStore;
+  readonly authenticator?: ControlApiAuthenticator;
 }
 
 export function createControlApiApp(
@@ -22,6 +28,8 @@ export function createControlApiApp(
   const config = dependencies.config ?? loadControlApiConfig();
   const store =
     dependencies.store ?? createConfiguredControlPlaneStore(config);
+  const authenticator =
+    dependencies.authenticator ?? createConfiguredControlApiAuthenticator(config);
 
   return new Elysia()
     .onError(({ code, error, set }) => {
@@ -47,9 +55,10 @@ export function createControlApiApp(
         },
       };
     })
-    .use(createHealthRoutes(config, store))
-    .use(createOrganizationRoutes(store))
-    .use(createProjectRoutes(store))
-    .use(createEnvironmentRoutes(store))
-    .use(createAuditEventRoutes(store));
+    .use(createHealthRoutes(config, store, authenticator))
+    .use(createApiKeyRoutes(config, store, authenticator))
+    .use(createOrganizationRoutes(config, store, authenticator))
+    .use(createProjectRoutes(config, store, authenticator))
+    .use(createEnvironmentRoutes(config, store, authenticator))
+    .use(createAuditEventRoutes(config, store, authenticator));
 }

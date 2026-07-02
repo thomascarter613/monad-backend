@@ -1,5 +1,5 @@
 {
-  "name": "@open-backend-cloud/database",
+  "name": "@monad-backend/database",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,7 +12,8 @@
     "check": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "postgres": "latest"
+    "postgres": "latest",
+    "@monad-backend/auth": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -1,4 +1,4 @@
-import type { ControlApiConfig } from "@open-backend-cloud/config";
+import type { ControlApiConfig } from "@monad-backend/config";
 import type { ControlPlaneStore } from "./control-plane-store";
 import { createInMemoryControlPlaneStore } from "./control-plane-store";
 import { createDatabaseControlPlaneStore } from "./database-control-plane-store";

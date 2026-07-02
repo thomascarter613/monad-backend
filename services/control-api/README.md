@@ -24,70 +24,92 @@ It currently exposes:
 - `GET /environments/:environmentId`
 - `GET /audit-events`
 
-## Store Modes
+## Public Endpoints
 
-The Control API supports two store modes.
+These endpoints are public:
 
-### `memory`
+- `GET /health`
+- `GET /version`
+
+## Protected Endpoints
+
+All other endpoints require a Control API key.
+
+Provide the key with one of:
+
+```text
+Authorization: Bearer <api-key>
+X-Control-Api-Key: <api-key>
+X-API-Key: <api-key>
+```
+
+Local Development Auth
+
+The local default is static API key mode.
+
+CONTROL_API_AUTH_MODE=static \
+CONTROL_API_DEV_API_KEY=dev-local-control-api-key \
+bun run control-api:dev
+
+Example request:
+
+curl -H "X-Control-Api-Key: dev-local-control-api-key" \
+  http://127.0.0.1:4310/ready
+Database API Key Auth
+
+Database mode validates SHA-256 API key hashes from platform.api_keys.
+
+CONTROL_API_STORE_MODE=database \
+CONTROL_API_AUTH_MODE=database \
+CONTROL_PLANE_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+bun run control-api:dev
+Store Modes
+memory
 
 Default.
 
 Useful for route tests, smoke tests, local API shape work, and development when Supabase/Postgres is not running.
 
-```bash
 CONTROL_API_STORE_MODE=memory bun run control-api:dev
-```
+database
 
-### `database`
+Uses the platform schema in PostgreSQL.
 
-Uses the `platform` schema in PostgreSQL.
-
-```bash
 CONTROL_API_STORE_MODE=database \
 CONTROL_PLANE_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres \
 bun run control-api:dev
-```
-
-## What It Does Not Do Yet
+What It Does Not Do Yet
 
 It does not yet provision real Supabase runtimes.
 
-It does not yet authenticate requests.
+It does not yet implement full user authentication.
 
-It does not yet enforce authorization.
+It does not yet implement organization-scoped authorization.
 
 It does not yet manage secrets, backups, deployments, or quotas.
 
 Those will come in later work packets.
 
-## Development
+Development
 
 From the repo root:
 
-```bash
 bun run control-api:dev
-```
 
 Then open:
 
-```text
 http://127.0.0.1:4310/health
-```
-
-## Validation
+Validation
 
 From the repo root:
 
-```bash
 bun run control-api:check
-```
-
-## Database Validation
+Database Validation
 
 With local Supabase running and reset:
 
-```bash
 CONTROL_PLANE_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres \
 bun run control-api:db:check
-```
+Hash an API Key
+bun run control-api:auth:hash "your-long-api-key"
 

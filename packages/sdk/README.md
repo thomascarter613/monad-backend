@@ -1,4 +1,4 @@
-# `@open-backend-cloud/sdk`
+# `@monad-backend/sdk`
 
 Placeholder SDK package for future typed clients that call the control API.
 

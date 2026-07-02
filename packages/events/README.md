@@ -1,4 +1,4 @@
-# `@open-backend-cloud/events`
+# `@monad-backend/events`
 
 Shared event names and event envelope types for platform activity.
 

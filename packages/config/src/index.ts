@@ -1,3 +1,5 @@
+import type { ControlApiAuthMode } from "@monad-backend/auth";
+
 export type RuntimeEnvironment =
   | "local"
   | "test"
@@ -15,6 +17,12 @@ export interface ControlPlaneDatabaseConfig {
   readonly maxConnections: number;
 }
 
+export interface ControlApiAuthConfig {
+  readonly mode: ControlApiAuthMode;
+  readonly headerName: string;
+  readonly staticApiKey: string | undefined;
+}
+
 export interface ControlApiConfig {
   readonly serviceName: "control-api";
   readonly version: string;
@@ -25,6 +33,7 @@ export interface ControlApiConfig {
   readonly logLevel: LogLevel;
   readonly storeMode: ControlApiStoreMode;
   readonly database: ControlPlaneDatabaseConfig;
+  readonly auth: ControlApiAuthConfig;
 }
 
 function readString(
@@ -116,6 +125,20 @@ function readStoreMode(
   );
 }
 
+function readAuthMode(
+  env: Record<string, string | undefined>,
+): ControlApiAuthMode {
+  const value = readString(env, "CONTROL_API_AUTH_MODE", "static");
+
+  if (value === "disabled" || value === "static" || value === "database") {
+    return value;
+  }
+
+  throw new Error(
+    `CONTROL_API_AUTH_MODE must be disabled, static, or database. Received: ${value}`,
+  );
+}
+
 export function loadControlApiConfig(
   env: Record<string, string | undefined> = Bun.env,
 ): ControlApiConfig {
@@ -141,6 +164,11 @@ export function loadControlApiConfig(
         readOptionalString(env, "DATABASE_URL"),
       schema: readString(env, "CONTROL_PLANE_DATABASE_SCHEMA", "platform"),
       maxConnections: readNumber(env, "CONTROL_PLANE_DATABASE_MAX", 5),
+    },
+    auth: {
+      mode: readAuthMode(env),
+      headerName: readString(env, "CONTROL_API_KEY_HEADER", "x-control-api-key"),
+      staticApiKey: readOptionalString(env, "CONTROL_API_DEV_API_KEY"),
     },
   };
 }
